@@ -7,25 +7,47 @@ namespace MovieMateAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MovieController : Controller
+    public class MovieController : ControllerBase
     {
-        private MovieMateDbContext _context;
+        private readonly MovieMateDbContext _context;
 
-        public MovieController()
+        public MovieController(MovieMateDbContext context)
         {
-            _context = new MovieMateDbContext(); 
+            _context = context; 
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<List<Movie>>> GetUserMovies(int id)
+        // GET: api/Users
+
+        [HttpGet]
+        [Route("AllUsers")]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return Ok(await _context.Movies.Where(x => x.UserId == id).ToListAsync());
+            return Ok(await _context.Users.ToListAsync());
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<List<Movie>>> GetUserGenres(int id)
+        // GET: api/Users/1
+        [HttpGet]
+        [Route("User/{id}")]
+        public async Task<ActionResult<IEnumerable<Movie>>> GetUserByID(int id)
         {
-            return Ok(await _context.UserGenres.Where(x => x.UserId == id).ToListAsync());
+            return Ok(await _context.Users.Where(x => x.UserId == id).ToListAsync());
+            //visa namn på personen, vilka genrer de gillar, vilka filmer de sparat
+        }
+
+        // GET: api/Users/Movies
+        [HttpGet]
+        [Route("Movies/{id}")]
+        public async Task<ActionResult<IEnumerable<Movie>>> GetUserMovies(int id)
+        {
+            return Ok(await _context.Movies.Where(x => x.UserId == id).Include(m => m.MovieNavigation).Include(u => u.User).ToListAsync());
+        }
+
+        //GET: api/Genres
+        [HttpGet]
+        [Route("Genre/{id}")]
+        public async Task<ActionResult<List<Genre>>> GetUserGenres(int id)
+        {
+            return Ok(await _context.UserGenres.Where(x => x.UserId == id).Include(g => g.Genre).Include(u => u.User).ToListAsync());
         }
     }
 }
