@@ -1,5 +1,6 @@
 using MovieMateAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace MovieMateAPI
 {
@@ -11,7 +12,7 @@ namespace MovieMateAPI
 
             builder.Services.AddDbContext<MovieMateDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("MovieMateDBcontext")));
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

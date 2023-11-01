@@ -5,6 +5,7 @@ namespace MovieMateAPI.Models;
 
 public partial class UserGenre
 {
+    public int id { get; set; }
     public int GenreId { get; set; }
 
     public int UserId { get; set; }

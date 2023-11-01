@@ -28,10 +28,14 @@ public partial class MovieMateDbContext : DbContext
     public virtual DbSet<UserGenre> UserGenres { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=.;Database=MovieMateDB;Trusted_Connection=true;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        //modelBuilder.Entity<Movie>().Navigation(d => d.MovieDetails).AutoInclude();
+        //modelBuilder.Entity<Movie>().Navigation(u => u.User).AutoInclude();
+
         modelBuilder.Entity<Genre>(entity =>
         {
             entity.ToTable("Genre");
@@ -44,20 +48,18 @@ public partial class MovieMateDbContext : DbContext
 
         modelBuilder.Entity<Movie>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("Movie");
+            entity.ToTable("Movie");
 
-            entity.Property(e => e.MovieId).HasColumnName("movieID");
+            entity.Property(e => e.MovieDetailsId).HasColumnName("MovieDetailsID");
             entity.Property(e => e.Rating).HasColumnType("decimal(4, 2)");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.HasOne(d => d.MovieNavigation).WithMany()
-                .HasForeignKey(d => d.MovieId)
+            entity.HasOne(d => d.MovieDetails).WithMany(p => p.Movies)
+                .HasForeignKey(d => d.MovieDetailsId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Movie_Movie_Details");
 
-            entity.HasOne(d => d.User).WithMany()
+            entity.HasOne(d => d.User).WithMany(p => p.Movies)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Movie_User");
@@ -65,13 +67,9 @@ public partial class MovieMateDbContext : DbContext
 
         modelBuilder.Entity<MovieDetail>(entity =>
         {
-            entity.HasKey(e => e.MovieId);
-
             entity.ToTable("Movie_Details");
 
-            entity.Property(e => e.MovieId)
-                .ValueGeneratedNever()
-                .HasColumnName("movieID");
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Release).HasColumnType("date");
             entity.Property(e => e.Title).HasMaxLength(50);
         });
