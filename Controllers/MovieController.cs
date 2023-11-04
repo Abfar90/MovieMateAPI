@@ -41,12 +41,13 @@ namespace MovieMateAPI.Controllers
         public async Task<ActionResult<IEnumerable<Movie>>> GetUserByID(int id)
         {
             return Ok(await _context.Movies.Where(x => x.UserId == id).Include(y => y.MovieDetails).ThenInclude(p => p.Movies).
-                Select(m => new {
+                Select(m => new
+                {
                     Title = m.MovieDetails.Title,
-                    Release = m.MovieDetails.Release, 
+                    Release = m.MovieDetails.Release,
                     Rating = m.Rating,
                 }).ToListAsync());
-            
+
         }
 
         // GET: api/Users/Movies
@@ -56,7 +57,6 @@ namespace MovieMateAPI.Controllers
         {
             var UserMovies = await _context.Movies.Where(m => m.UserId == id)
                                            .Include(details => details.MovieDetails)
-                                           //.Include(userInfo => userInfo.User)
                                            .ToListAsync();
             return Ok(UserMovies);
         }
@@ -67,10 +67,11 @@ namespace MovieMateAPI.Controllers
         public async Task<ActionResult<List<Genre>>> GetUserGenres(int id)
         {
             return Ok(await _context.UserGenres.Where(x => x.UserId == id).Include(g => g.Genre).
-                Select(g => new {
-                Title = g.Genre.Title,
-                Description = g.Genre.Description,
-            }).ToListAsync());
+                Select(g => new
+                {
+                    Title = g.Genre.Title,
+                    Description = g.Genre.Description,
+                }).ToListAsync());
         }
 
         //POST: api/Genres
@@ -87,7 +88,8 @@ namespace MovieMateAPI.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(await _context.UserGenres.Where(x => x.UserId == newEntry.UserId).Include(g => g.Genre).
-                Select(g => new {
+                Select(g => new
+                {
                     Title = g.Genre.Title,
                     Description = g.Genre.Description,
                 }).ToListAsync());
@@ -106,18 +108,16 @@ namespace MovieMateAPI.Controllers
 
             dbmovie.Rating = updateDTO.rating;
 
-            // Save changes to the database
             await _context.SaveChangesAsync();
 
             var ratedMovies = await _context.Movies.Where(x => x.UserId == updateDTO.userId && x.Rating != null).Include(m => m.MovieDetails).ToListAsync();
 
-            // Map each rated movie to an UpdateResponseDTO
             var responseDTOs = ratedMovies.Select(m => new UpdateResponseDTO
             {
                 MovieDetailsId = m.MovieDetailsId,
                 title = m.MovieDetails.Title,
                 rating = m.Rating
-                
+
             }).ToList();
 
             return Ok(responseDTOs);
@@ -128,32 +128,26 @@ namespace MovieMateAPI.Controllers
         {
             try
             {
-                // Initialize an HttpClient instance with the base address of TMDb's API.
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new System.Uri("https://api.themoviedb.org/3/");
 
-                // Make a request to TMDb to fetch movie recommendations based on user-saved movies.
                 var response = await httpClient.GetAsync($"discover/movie?api_key={_tmdbApiKey}&with_genres={genreId}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&page=1&with_watch_monetization_types=flatrate&with_original_language=en&watch_region=US");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
 
-                    // Deserialize the TMDb API response into a MovieRecommendationResponseDTO
                     var movieRecommendationResponse = JsonConvert.DeserializeObject<tmdbResponseDTO>(content);
 
-                    // Extract and return the movie recommendations
                     return Ok(movieRecommendationResponse.Results);
                 }
                 else
                 {
-                    // Handle the case where the request to TMDb's API was not successful.
                     return BadRequest("Failed to fetch movie recommendations from TMDb.");
                 }
             }
             catch (Exception ex)
             {
-                // Handle any exceptions that occur during the request.
                 return StatusCode(500, "An error occurred while fetching movie recommendations.");
             }
         }

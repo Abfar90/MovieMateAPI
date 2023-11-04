@@ -7,7 +7,7 @@ namespace MovieMateAPI.DTOs
     {
         public AutomapperProfile()
         {
-            CreateMap<createUserGenredDTO, UserGenre>().ForMember(dest => dest.id, opt => opt.Ignore());
+            CreateMap<createUserGenredDTO, UserGenre>();
         }
     }
 }

@@ -33,9 +33,6 @@ public partial class MovieMateDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        //modelBuilder.Entity<Movie>().Navigation(d => d.MovieDetails).AutoInclude();
-        //modelBuilder.Entity<Movie>().Navigation(u => u.User).AutoInclude();
-
         modelBuilder.Entity<Genre>(entity =>
         {
             entity.ToTable("Genre");
@@ -105,19 +102,18 @@ public partial class MovieMateDbContext : DbContext
 
         modelBuilder.Entity<UserGenre>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("User_Genre");
+            entity.ToTable("User_Genre");
 
+            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.GenreId).HasColumnName("genreID");
             entity.Property(e => e.UserId).HasColumnName("userID");
 
-            entity.HasOne(d => d.Genre).WithMany()
+            entity.HasOne(d => d.Genre).WithMany(p => p.UserGenres)
                 .HasForeignKey(d => d.GenreId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_User_Genre_Genre");
 
-            entity.HasOne(d => d.User).WithMany()
+            entity.HasOne(d => d.User).WithMany(p => p.UserGenres)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_User_Genre_User");

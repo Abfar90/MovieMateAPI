@@ -21,7 +21,7 @@ namespace MovieMateAPI
 
             var mappingConfig = new MapperConfiguration(mc =>
             {
-                mc.AddProfile(new AutomapperProfile()); // Add your mapping profile
+                mc.AddProfile(new AutomapperProfile());
             });
 
             IMapper mapper = mappingConfig.CreateMapper();

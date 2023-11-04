@@ -15,6 +15,5 @@ public partial class Movie
 
     public virtual MovieDetail MovieDetails { get; set; } = null!;
 
-    public virtual User? User { get; set; } = null!;
-
+    public virtual User User { get; set; } = null!;
 }
