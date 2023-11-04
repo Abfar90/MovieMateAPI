@@ -1,6 +1,8 @@
 using MovieMateAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using AutoMapper;
+using MovieMateAPI.DTOs;
 
 namespace MovieMateAPI
 {
@@ -11,10 +13,19 @@ namespace MovieMateAPI
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddDbContext<MovieMateDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("MovieMateDBcontext")));
-
+            builder.Services.AddHttpClient();
             builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+            var mappingConfig = new MapperConfiguration(mc =>
+            {
+                mc.AddProfile(new AutomapperProfile()); // Add your mapping profile
+            });
+
+            IMapper mapper = mappingConfig.CreateMapper();
+            builder.Services.AddSingleton(mapper);
 
             var app = builder.Build();
 
