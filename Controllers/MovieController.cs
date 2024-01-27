@@ -32,52 +32,50 @@ namespace MovieMateAPI.Controllers
         [Route("AllUsers")]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
-            return Ok(await _context.Users.ToListAsync());
+            //return Ok(await _context.Users.Include(m => m.Movies).Include(u => u.UserGenres).ToListAsync());
+
+            var users = await _context.Users
+                            .Include(u => u.Movies)
+                            .ThenInclude(m => m.MovieDetails)
+                            .Include(u => u.UserGenres)
+                            .ThenInclude(x => x.Genre)
+                            .ToListAsync();
+
+            var userDTOs = _mapper.Map<IEnumerable<UserDTO>>(users);
+            return Ok(userDTOs);
         }
 
         // GET: api/Users/1
         [HttpGet]
-        [Route("User/{id}")] //visa namn på personen, vilka genrer de gillar, vilka filmer de sparat
-        public async Task<ActionResult<IEnumerable<Movie>>> GetUserByID(int id)
+        [Route("User/{id}")] //visa filmer kopplade till en användare.
+        public async Task<ActionResult<IEnumerable<Movie>>> GetUserMovies(int id)
         {
-            return Ok(await _context.Movies.Where(x => x.UserId == id).Include(y => y.MovieDetails).ThenInclude(p => p.Movies).
-                Select(m => new
-                {
-                    Title = m.MovieDetails.Title,
-                    Release = m.MovieDetails.Release,
-                    Rating = m.Rating,
-                }).ToListAsync());
+            var result = await _context.Movies.Where(x => x.UserId == id)
+                .Include(y => y.MovieDetails)
+                .ThenInclude(p => p.Movies)
+                .ToListAsync();
 
-        }
-
-        // GET: api/Users/Movies
-        [HttpGet]
-        [Route("Movies/{id}")]
-        public async Task<ActionResult<List<Movie>>> GetUserMovies(int id)
-        {
-            var UserMovies = await _context.Movies.Where(m => m.UserId == id)
-                                           .Include(details => details.MovieDetails)
-                                           .ToListAsync();
-            return Ok(UserMovies);
+            var movies = _mapper.Map<IEnumerable<MovieDTO>>(result);
+            return Ok(movies);
         }
 
         //GET: api/Genres
         [HttpGet]
-        [Route("Genre/{id}")]
+        [Route("Genre/{id}")] //Visa genrer koppade till en användare.
         public async Task<ActionResult<List<Genre>>> GetUserGenres(int id)
         {
-            return Ok(await _context.UserGenres.Where(x => x.UserId == id).Include(g => g.Genre).
-                Select(g => new
-                {
-                    Title = g.Genre.Title,
-                    Description = g.Genre.Description,
-                }).ToListAsync());
+            var result = await _context.UserGenres.Where(x => x.UserId == id)
+                .Include(g => g.Genre)
+                .ToListAsync();
+
+            var genres = _mapper.Map<IEnumerable<UserGenreDTO>>(result);
+            return Ok(genres);
         }
 
         //POST: api/Genres
         [HttpPost]
-        [Route("Genre/post")]
-        public async Task<ActionResult<List<UserGenre>>> postUserGenres(createUserGenredDTO newUserGenre)
+        [Route("Genre/post")] //Lägg till en genre till en användare.
+        public async Task<ActionResult<List<Genre>>> postUserGenres(createUserGenredDTO newUserGenre)
         {
             var context = _context.UserGenres;
 
@@ -87,36 +85,38 @@ namespace MovieMateAPI.Controllers
 
             await _context.SaveChangesAsync();
 
-            return Ok(await _context.UserGenres.Where(x => x.UserId == newEntry.UserId).Include(g => g.Genre).
-                Select(g => new
-                {
-                    Title = g.Genre.Title,
-                    Description = g.Genre.Description,
-                }).ToListAsync());
+            var updatedGenres = await _context.UserGenres.Where(x => x.UserId == newUserGenre.UserId)
+                                                        .Include(g => g.Genre)
+                                                        .ToListAsync();
+
+            var genres = _mapper.Map<IEnumerable<UserGenreDTO>>(updatedGenres);
+            return Ok(genres);
         }
 
         [HttpPut]
         [Route("Edit/{id}")]
         public async Task<ActionResult<List<Movie>>> RateMovie(int id, UpdateRatingDTO updateDTO)
         {
-            var dbmovie = await _context.Movies.Where(x => x.MovieDetailsId == id).Include(m => m.MovieDetails).FirstAsync();
+            var dbmovie = await _context.Movies.Where(x => x.MovieDetailsId == id).Include(m => m.MovieDetails).FirstOrDefaultAsync();
 
             if (dbmovie == null)
             {
                 return BadRequest("Movie not found");
             }
 
+            decimal? oldrating = dbmovie.Rating; 
+
             dbmovie.Rating = updateDTO.rating;
 
             await _context.SaveChangesAsync();
 
-            var ratedMovies = await _context.Movies.Where(x => x.UserId == updateDTO.userId && x.Rating != null).Include(m => m.MovieDetails).ToListAsync();
+            var ratedMovies = await _context.Movies.Where(x => x.UserId == updateDTO.userId && x.MovieDetailsId == id).Include(m => m.MovieDetails).ToListAsync();
 
             var responseDTOs = ratedMovies.Select(m => new UpdateResponseDTO
             {
-                MovieDetailsId = m.MovieDetailsId,
                 title = m.MovieDetails.Title,
-                rating = m.Rating
+                newRating = m.Rating,
+                oldRating = oldrating
 
             }).ToList();
 
